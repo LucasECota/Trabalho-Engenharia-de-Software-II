@@ -2,7 +2,7 @@
 
 Grupo (individual): Lucas Emanuel Cota Carneiro – 24.1.8980
 
-## Saída de `rodar testes` (só o resumo do topo e a última linha)
+## Saída de `rodar testes`
 
 ```
 funcionais  10 testes · OK
@@ -33,7 +33,7 @@ O enlace volta...
 Sincronizadas agora: 2 | pendentes: 0
 ```
 
-## Saída de `rodar diff --desde-marco` (na troca do gateway padrão)
+## Saída de `rodar diff --desde-marco` 
 
 ```
 Mudanças desde o marco:
@@ -44,11 +44,11 @@ Novos (0)
 Removidos (0)
 ```
 
-## Quem fez o quê (uma linha por integrante)
+## Quem fez o quê 
 
 - Lucas Emanuel Cota Carneiro (24.1.8980): fiz a atividade sozinho, do começo ao fim (os quatro ciclos, os ADRs, os diagramas C4, o SEGREDOS e os testes de fronteira). Usei o Claude Code, um assistente de IA, como ferramenta de apoio, como o roteiro permite.
 
-## Reflexão (até 12 linhas)
+## Reflexão 
 
 1. **Código novo ou edição?** Em todos os pedidos a parte nova entrou como código novo: adaptadores e fábrica (1), regras de entrada (2), decoradores (3) e a interface do observador (4). Mesmo assim, tive que editar código existente em dois casos: o que tinha a decisão "chumbada" lá dentro (`ServicoCompra` criava o SDK da PagaPix, a `Catraca` tinha o `switch` da regra e o `Cardapio` criava os três canais) e as classes de montagem, porque escolher qual peça usar é o trabalho delas. Essa edição se paga uma vez só: trocar o gateway foi mudar uma linha (o `diff --desde-marco` mostrou apenas `MontagemCreditos.java`).
 
