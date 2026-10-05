@@ -4,32 +4,34 @@
 
 ## Contexto
 
-RNF9: a regra de entrada é escolhida na montagem a partir da configuração — `SALDO` (saldo ≥ tarifa) ou `TOLERA_NEGATIVO` (saldo ≥ −R$ 5,00 após pagar) — e incluir uma regra nova **não altera a classe `Catraca`**. O conselho muda a regra de tempos em tempos. A decisão continua sob o RNF2 (decidir em ≤ 1 s sem rede): a regra roda local, sobre a réplica.
+O RNF9 diz que a regra de entrada é escolhida na montagem, a partir da configuração, entre `SALDO` (saldo ≥ tarifa) e `TOLERA_NEGATIVO` (saldo ≥ −R$ 5,00 depois de pagar), e que acrescentar uma regra nova **não pode alterar a classe `Catraca`**. O conselho muda a regra de tempos em tempos. A decisão continua sob o RNF2 (decidir em ≤ 1 s sem rede), então a regra roda local, em cima da réplica.
 
-- **A · mais um `case` no `switch` da Catraca:** a Catraca continua lendo a `String` de configuração e comparando saldos.
-- **B · a regra vira objeto:** interface `RegraEntrada`, uma classe por regra, a Catraca só a chama; a montagem traduz o texto em objeto.
+Duas opções:
+
+- **A · mais um `case` no `switch` da Catraca:** a Catraca continua lendo a `String` da configuração e comparando saldos.
+- **B · a regra vira objeto:** uma interface `RegraEntrada`, uma classe por regra, e a Catraca só chama; quem traduz o texto em objeto é a montagem.
 
 | Cenário | A · `switch` na Catraca | B · `RegraEntrada` injetada | Trade-off |
 |---|---|---|---|
 | RNF9 · regra nova sem alterar a Catraca | não atende | atende | • |
 | RNF2 · decisão em ≤ 1 s sem rede | atende | atende (uma chamada virtual a mais) | |
-| Testabilidade de cada regra isolada | baixa (precisa montar a Catraca inteira) | alta (`avaliar(usuario, tarifa)`) | • |
-| Quantidade de tipos / facilidade de ler o fluxo | menor, fluxo num lugar só | maior, regra fica em outro arquivo | • |
+| Testar cada regra isolada | difícil (precisa montar a Catraca inteira) | fácil (`avaliar(usuario, tarifa)`) | • |
+| Quantidade de tipos / facilidade de ler o fluxo | menos tipos, fluxo num lugar só | mais tipos, regra fica em outro arquivo | • |
 
-**Ponto de sensibilidade:** onde mora o critério de entrada (afeta a modificabilidade da classe mais crítica da porta).
-**Ponto de trade-off:** modificabilidade e testabilidade sobem; simplicidade de leitura cai.
+**Ponto de sensibilidade:** onde mora o critério de entrada, o que afeta a modificabilidade da classe mais crítica da porta.
+**Ponto de trade-off:** modificabilidade e testabilidade sobem; a facilidade de ler o fluxo cai.
 
 ## Decisão
 
-A `Catraca` **recebe pronta, no construtor, uma `RegraEntrada`** (contrato com um método: "este usuário pode entrar pagando esta tarifa?") e só a chama. Cada regra é uma classe (`SaldoSuficiente`, `ToleraSaldoNegativo(limite)`); o texto da configuração é traduzido em objeto **somente** em `Montagem.criarCatraca`, que também recusa valor desconhecido na montagem (`IllegalArgumentException`), não na hora da passagem. É o padrão Strategy; o princípio é aberto/fechado.
+A `Catraca` **recebe uma `RegraEntrada` já pronta, no construtor**, e só chama ela. A `RegraEntrada` é um contrato com um único método ("esse usuário pode entrar pagando essa tarifa?"). Cada regra virou uma classe (`SaldoSuficiente`, `ToleraSaldoNegativo(limite)`), e o texto da configuração só é traduzido em objeto dentro de `Montagem.criarCatraca`. É ali também que um valor desconhecido é recusado (`IllegalArgumentException`), na hora de montar e não na hora da passagem. É o padrão Strategy, e o princípio por trás é o aberto/fechado.
 
 ## Consequências
 
-- **Ganha:** regra nova = classe nova + uma linha em `Montagem`; cada regra é testável isoladamente; a Catraca perde `switch`, `"SALDO"` e `compareTo`; configuração inválida falha ao subir, não com uma pessoa na fila.
-- **Paga:** mais tipos; quem monta precisa saber qual estratégia escolher; um nível de indireção para quem lê o fluxo da autorização; o limite de R$ 5,00 ficou como constante na montagem (não é configurável por arquivo).
-- **Estrutura que nasce:** nenhum contêiner novo; aparece no **nível 3** do App da Catraca (interior de um contêiner existente): `RegraEntrada` e suas implementações (`docs/c4-catraca.md`).
-- **Evidência:** `TestesPedido2` (inclusive o limite exato e a Catraca sem `switch`/`compareTo`) e `TestesFronteira.testCatracaNaoConheceRegrasConcretas`.
+- **Ganha:** regra nova é uma classe nova mais uma linha na `Montagem`; cada regra dá pra testar sozinha; a Catraca perdeu o `switch`, o `"SALDO"` e o `compareTo`; e uma configuração inválida derruba o sistema ao subir, e não com uma pessoa esperando na fila.
+- **Paga:** mais tipos; quem monta precisa saber qual estratégia escolher; quem lê o fluxo de autorização enfrenta um nível a mais de indireção; e o limite de R$ 5,00 ficou como constante na montagem (não dá pra configurar por arquivo).
+- **Estrutura que nasce:** nenhum contêiner novo. O que aparece é no **nível 3** do App da Catraca (dentro de um contêiner que já existia): a `RegraEntrada` e suas implementações (`docs/c4-catraca.md`).
+- **Evidência:** `TestesPedido2` (incluindo o limite exato e a Catraca sem `switch`/`compareTo`) e `TestesFronteira.testCatracaNaoConheceRegrasConcretas`.
 
 ## Alternativa descartada
 
-**A · mais um `case` no `switch`:** simples e rápida hoje, mas cada regra aprovada reabre a classe mais crítica da porta e mistura critério de negócio com orquestração, contrariando o RNF9.
+**A · mais um `case` no `switch`:** é simples e rápida hoje, mas toda regra aprovada pelo conselho reabriria a classe mais crítica da porta e misturaria critério de negócio com orquestração, o que vai contra o RNF9.
